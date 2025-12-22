@@ -1,8 +1,6 @@
 gcloud commands 
 ----------------
 
-gcloud commands 
-----------------
 >gcloud init 
 
 > gcloud projects create vctbatch45 --name=vctbatch45
