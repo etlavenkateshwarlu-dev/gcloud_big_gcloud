@@ -1,0 +1,6 @@
+--> create bicket 
+gcloud storage buckets create gs://vctbatch45-dev-custdata-bucket
+
+-->
+gcloud storage cp cust_temp1.csv gs://vctbatch45-dev-custdata-bucket/cust_data/
+

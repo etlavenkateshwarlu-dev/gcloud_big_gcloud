@@ -1,0 +1,8 @@
+--> create bicket 
+gcloud storage buckets create gs://vctbatch45-dev-custdata-bucket
+
+-->
+gcloud storage cp cust_temp1.csv gs://vctbatch45-dev-custdata-bucket/cust_data/
+
+--> to remove fiel from bucket
+gcloud storage rm "gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_lo - test.csv"

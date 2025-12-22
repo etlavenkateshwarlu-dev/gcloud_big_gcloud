@@ -1,0 +1,84 @@
+BigQuery 
+-------
+VM instance command 
+
+> bq ls
+
+--> create datset 
+bq mk -d vctbatchnew45:cust_data_set1
+-> see the dataset
+bq ls vctbatchnew45:
+
+-->to creat table 
+bq mk -t vctbatchnew45:cust_data_set1.cust_temp1
+
+bq mk -t vctbatchnew45:cust_data_set1.cust_tmpe2 cust_id:integer,cust_name:string,cust_loc:string
+
+
+--> to see the schema
+
+bq show vctbatchnew45:cust_data_set1.cust_tmpe2
+
+--> to load data into table 
+bq load --source_format=CSV --skip_leading_rows=1 vctbatchnew45:cust_data_set1.cust_tmpe2 gs://vctbatch45-dev-custdata-bucket/cust_data/cust_temp1.csv
+
+--> to get the data from table 
+bq query "select * from vctbatchnew45:cust_data_set1.cust_tmpe2"
+
+
+gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_lo.csv
+gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_ny.csv
+gs://vctbatch45-dev-custdata-bucket/landing_zone/orders.csv
+gs://vctbatch45-dev-custdata-bucket/landing_zone/salesman_lo.csv
+gs://vctbatch45-dev-custdata-bucket/landing_zone/salesman_ny.csv
+
+create datset 
+-------------
+bq mk -d vctbatchnew45:cust_data_dev
+bq mk -d vctbatchnew45:sales_data_dev
+bq mk -d vctbatchnew45:orders_data_dev
+
+
+
+cust_data_dev  dataset 
+---------------------
+bq load --source_format=CSV --skip_leading_rows=1 --autodetect \
+vctbatchnew45:cust_data_dev.customer_lo gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_lo.csv
+
+bq load --source_format=CSV --skip_leading_rows=1 --autodetect \
+vctbatchnew45:cust_data_dev.customer_ny gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_ny.csv
+
+sales_data_dev dataset
+----------------------
+bq load --source_format=CSV --skip_leading_rows=1 --autodetect \
+vctbatchnew45:sales_data_dev.sales_lo gs://vctbatch45-dev-custdata-bucket/landing_zone/salesman_lo.csv
+
+bq load --source_format=CSV --skip_leading_rows=1 --autodetect \
+vctbatchnew45:sales_data_dev.sales_ny gs://vctbatch45-dev-custdata-bucket/landing_zone/salesman_ny.csv
+
+
+orders_data_dev dataset
+-----------------------
+bq load --source_format=CSV --skip_leading_rows=1 --autodetect \
+vctbatchnew45:orders_data_dev.orders gs://vctbatch45-dev-custdata-bucket/landing_zone/orders.csv
+
+Quires to fetch data 
+---------------------
+bq query --use_legacy_sql=False "select * from  vctbatchnew45.cust_data_dev.customer_lo"
+
+bq query --use_legacy_sql=False "select * from vctbatchnew45.cust_data_dev.customer_ny"
+
+bq query --use_legacy_sql=False "select * from vctbatchnew45.sales_data_dev.sales_lo"
+
+bq query --use_legacy_sql=False "select * from vctbatchnew45.sales_data_dev.sales_ny"
+
+bq query --use_legacy_sql=False "select * from vctbatchnew45.orders_data_dev.orders"
+
+
+
+-->bq mk -d vctbatchnew45:curated_cust_sal_order_dev
+
+
+
+
+
