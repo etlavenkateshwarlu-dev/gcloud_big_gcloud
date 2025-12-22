@@ -75,3 +75,39 @@ bq query --use_legacy_sql=False "select * from vctbatchnew45.sales_data_dev.sale
 bq query --use_legacy_sql=False "select * from vctbatchnew45.orders_data_dev.orders"
 
 
+
+-->bq mk -d vctbatchnew45:curated_cust_sal_order_dev
+
+
+
+
+SELECT * FROM vctbatchnew45.cust_data_dev.customer_lo LIMIT 1000;
+
+SELECT * FROM `vctbatchnew45.cust_data_dev.customer_ny` LIMIT 1000;
+
+SELECT * FROM `vctbatchnew45.sales_data_dev.sales_lo` LIMIT 1000;
+
+SELECT * FROM `vctbatchnew45.sales_data_dev.sales_ny` LIMIT 1000;
+
+SELECT * FROM `vctbatchnew45.orders_data_dev.orders` LIMIT 1000;
+
+with cust_cte as (
+select cust_name,city,salesman_id from vctbatchnew45.cust_data_dev.customer_lo 
+union all 
+select cust_name,city,salesman_id from vctbatchnew45.cust_data_dev.customer_ny
+)
+,
+sales_cte as(
+SELECT salesman_id,name,city FROM `vctbatchnew45.sales_data_dev.sales_lo` 
+union all 
+SELECT salesman_id,name,city FROM `vctbatchnew45.sales_data_dev.sales_ny`)
+select cust.cust_name , cust.city,s.salesman_id,s.name ,sum(o.purch_amt) as total_purchace_amount 
+from sales_cte as s join `vctbatchnew45.orders_data_dev.orders` as o on s.salesman_id=o.salesman_id 
+join cust_cte cust on cust.salesman_id=o.salesman_id group by  s.salesman_id ,s.name ,cust.cust_name ,cust.city order by salesman_id;
+
+
+
+
+
+
+
