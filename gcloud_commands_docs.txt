@@ -3,7 +3,7 @@ gcloud commands
 Create a Compute Engine VM using gcloud
 ----------------------------------------
 # Make sure correct project is set
-gcloud config set project elevated-bonito-481909-k4
+gcloud config set project vctbatchnew45
 
 # (Optional) Set default region & zone
 gcloud config set compute/region us-central1
@@ -23,6 +23,14 @@ C:\Users\91991\Documents\VT\Learnnings\GCP_Cloud Data Engeer\putty_key
 
 >gcloud init 
 
-> gcloud projects create vctbatchnew45 --name=vctbatchnew45
+> gcloud projects create vctbatch-dev45 --name=vctbatch-dev45
+
+-->to see the billing accouts
+gcloud billing accounts list
+
+--> gcloud billing accounts list
+
+gcloud billing projects link vctbatchnew45 \
+--billing-account=01F930-9DFAD8-92A816
 
 

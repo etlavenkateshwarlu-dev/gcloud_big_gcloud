@@ -2,8 +2,27 @@ gcloud commands
 ----------------
 Create a Compute Engine VM using gcloud
 ----------------------------------------
+# Make sure correct project is set
+gcloud config set project elevated-bonito-481909-k4
 
+# (Optional) Set default region & zone
+gcloud config set compute/region us-central1
+gcloud config set compute/zone us-central1-a
+
+
+# Create a Compute Engine VM
+gcloud compute instances create batch45 --zone=us-central1-a --machine-type=e2-medium --image-family=debian-12 --image-project=debian-cloud  --boot-disk-size=20GB
+  
+#gcloud compute instances list
+
+EXTERNAL_IP: 34.57.182.117
+
+C:\Users\91991\Documents\VT\Learnnings\GCP_Cloud Data Engeer\putty_key
+
+-->gcloud compute ssh batch45 --zone=us-central1-a
 
 >gcloud init 
 
-> gcloud projects create vctbatch45 --name=vctbatch45
+> gcloud projects create vctbatchnew45 --name=vctbatchnew45
+
+

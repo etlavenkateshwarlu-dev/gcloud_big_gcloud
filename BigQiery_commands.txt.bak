@@ -25,12 +25,13 @@ bq load --source_format=CSV --skip_leading_rows=1 vctbatchnew45:cust_data_set1.c
 --> to get the data from table 
 bq query "select * from vctbatchnew45:cust_data_set1.cust_tmpe2"
 
+gsutil cp *.csv gs://vctbatchdev45-dev-custdata-bucket/landing_zone
 
-gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_lo.csv
-gs://vctbatch45-dev-custdata-bucket/landing_zone/customer_ny.csv
-gs://vctbatch45-dev-custdata-bucket/landing_zone/orders.csv
-gs://vctbatch45-dev-custdata-bucket/landing_zone/salesman_lo.csv
-gs://vctbatch45-dev-custdata-bucket/landing_zone/salesman_ny.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_ny.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/orders.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/salesman_lo.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/salesman_ny.csv
 
 create datset 
 -------------
@@ -79,8 +80,6 @@ bq query --use_legacy_sql=False "select * from vctbatchnew45.orders_data_dev.ord
 -->bq mk -d vctbatchnew45:curated_cust_sal_order_dev
 
 
-
-
 SELECT * FROM vctbatchnew45.cust_data_dev.customer_lo LIMIT 1000;
 
 SELECT * FROM `vctbatchnew45.cust_data_dev.customer_ny` LIMIT 1000;
@@ -91,6 +90,11 @@ SELECT * FROM `vctbatchnew45.sales_data_dev.sales_ny` LIMIT 1000;
 
 SELECT * FROM `vctbatchnew45.orders_data_dev.orders` LIMIT 1000;
 
+insert into vctbatchnew45:stg_sales_dev.salesman_city_sales salesman_name(
+salesman_name,
+city,
+total_sales
+)
 with cust_cte as (
 select cust_name,city,salesman_id from vctbatchnew45.cust_data_dev.customer_lo 
 union all 
@@ -101,12 +105,63 @@ sales_cte as(
 SELECT salesman_id,name,city FROM `vctbatchnew45.sales_data_dev.sales_lo` 
 union all 
 SELECT salesman_id,name,city FROM `vctbatchnew45.sales_data_dev.sales_ny`)
-select cust.cust_name , cust.city,s.salesman_id,s.name ,sum(o.purch_amt) as total_purchace_amount 
-from sales_cte as s join `vctbatchnew45.orders_data_dev.orders` as o on s.salesman_id=o.salesman_id 
-join cust_cte cust on cust.salesman_id=o.salesman_id group by  s.salesman_id ,s.name ,cust.cust_name ,cust.city order by salesman_id;
+,
+sales_order as (
+select s.name,o.salesman_id,sum(o.purch_amt) as total_purchace_amount from sales_cte as s join `vctbatchnew45.orders_data_dev.orders` as o on s.salesman_id=o.salesman_id 
+group by  o.salesman_id ,s.name
+)
+select so.name,c.city,so.total_purchace_amount from cust_cte as c join sales_order so on c.salesman_id=so.salesman_id 
+
+
+INSERT your corrected result into the SILVER layer in BigQuery
+==========
+bq mk -d vctbatchnew45:stg_sales_dev
+bq mk -t vctbatchnew45:stg_sales_dev.salesman_city_sales salesman_name:string,city:string,total_sales:float
 
 
 
+expoer staging data to bicket 
+--------------------------
+gcloud storage buckets create gs://vctbatchnew45-staging-data-bucket
+
+
+bq extract --destination_format=CSV --print_header=true vctbatchnew45:stg_sales_dev.salesman_city_sales  gs://vctbatchnew45-staging-data-bucket/stg_export/salesman_city_sales.csv
+
+
+gsutil cat gs://vctbatchnew45-staging-data-bucket/stg_export/salesman_city_sales.csv
+
+
+===Using schema===
+
+schema.json 
+-----------
+[
+  {"name":"cust_id","type": "INT64","mode":"NULLABLE"},
+  {"name":"cust_name","type": "STRING","mode":"NULLABLE"},
+  {"name":"city","type": "STRING","mode":"NULLABLE"},
+  {"name":"grade","type": "INT64","mode":"NULLABLE"},
+  {"name":"saleman_id","type": "INT64","mode":"NULLABLE"}
+]
+
+
+bq load --source_format=CSV \
+--schema=schema.json \
+vctbatch-dev45:Test_data_Set.cust_new \
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo_no_header.csv
+
+
+bq  query --use_legacy_sql=False  "select * from vctbatch-dev45.Test_data_Set.cust_new"
+
+--> read/refer schema form gcs bucket
+
+
+
+external tble creation :
+------------------------
+bq mk --schema=schema.json \
+--external_table_definition= \
+CSV=gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo_no_header.csv \
+vctbatch-dev45:Test_data_Set.cust_new_external 
 
 
 

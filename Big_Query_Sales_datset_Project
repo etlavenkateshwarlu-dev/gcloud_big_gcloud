@@ -1,0 +1,182 @@
+
+1. SDK - gcloud auth login  > gcloud init, gcloud auth login/ putty to VM wiht SDK
+  --> done 
+2. create bucket 
+>gsutil mb -l us-central1 -c STANDARD gs://vctbatchdev45-dev-sales-bucket/
+
+3. check bucket  >gsutil ls gs://vctbatchdev45-dev-sales-bucket/
+ 
+4. copy command to load into GCS > 
+>gsutil cp Repurchase_Product.csv gs://vctbatchdev45-dev-sales-bucket/laonding_zone/sales/
+
+5. verify file and data in GCS bucket --> ls, cat, head,....
+   gsutil cat gs://vctbatchdev45-dev-sales-bucket/laonding_zone/sales/Repurchase_Product.csv | head
+6. Create Stage, History & Views datasets in BQ as per organization naming standards
+     sales_stg_ds  -->  bq mk -d sales_stg_ds
+	 sales_hist_ds  --> bq mk -d sales_hist_ds
+	 sales_views_ds  -->bq mk -d sales_views_ds
+	  
+7. verify dataset name and properties - ls, show
+   bq show sales_stg_ds
+   bq show sales_hist_ds
+   bq show sales_views_ds
+8. prepare DDL script for (Stage/Silver(all string datatypes), History/Gold, Platinum/auth View, Audit/control, Archive)
+sales_stage_schema.json
+--------------------
+[
+  { "name": "cid", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "upc", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "oid", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "dt", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "r_dt", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "prc", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "qty", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "amt", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "r_qty", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "r_amt", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "web_prod_id", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "GMM_DESC", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "PARENT_MDSE_DIVN_DESC", "type": "STRING", "mode": "NULLABLE" }
+]
+
+
+--> table creation 
+bq mk -t --schema=sales_stage_schema.json \
+vctbatch-dev45:sales_stg_ds.sales_stg 
+
+## if we want delete table 
+bq rm vctbatch-dev45:sales_stg_ds.sales_stg
+
+bq load --source_format=CSV \
+vctbatch-dev45:sales_stg_ds.sales_stg \
+gs://vctbatchdev45-dev-sales-bucket/laonding_zone/sales/Repurchase_Product.csv
+
+sales_hist_schema.json
+----------------------
+
+[
+  { "name": "CUST_ID", "type": "INT64", "mode": "NULLABLE" },
+  { "name": "USR_COUNT", "type": "INT64", "mode": "NULLABLE" },
+  { "name": "ORD_ID", "type": "INT64", "mode": "NULLABLE" },
+
+  { "name": "PURCH_DATE", "type": "DATE", "mode": "NULLABLE" },
+  { "name": "REC_DATE", "type": "DATE", "mode": "NULLABLE" },
+
+  { "name": "PRICE_ITEM", "type": "FLOAT64", "mode": "NULLABLE" },
+  { "name": "QTY", "type": "INT64", "mode": "NULLABLE" },
+  { "name": "CUST_AMT", "type": "FLOAT64", "mode": "NULLABLE" },
+
+  { "name": "REC_QTY", "type": "INT64", "mode": "NULLABLE" },
+  { "name": "REC_AMT", "type": "FLOAT64", "mode": "NULLABLE" },
+
+  { "name": "web_prod_id", "type": "INT64", "mode": "NULLABLE" },
+
+  { "name": "GMM_DESC", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "PARENT_MDSE_DIVN_DESC", "type": "STRING", "mode": "NULLABLE" },
+
+  { "name": "LOAD_DT", "type": "TIMESTAMP", "mode": "NULLABLE" },
+
+  { "name": "Country_code", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "ENTITY_CODE", "type": "STRING", "mode": "NULLABLE" }
+]
+
+-->historical table creation 
+bq mk -t --schema=sales_hist_schema.json vctbatch-dev45:sales_hist_ds.sales_hist
+
+
+9. Run Insert script to load the data from stage to History with transformation.***
+
+
+insert into `vctbatch-dev45.sales_hist_ds.sales_hist`
+select safe_cast(nullif(trim(cid),'') as INT64) as CUST_ID,
+safe_cast(nullif(trim(upc),'') as INT64) as USR_COUNT,
+safe_cast(nullif(trim(oid),'') as int64) as ORD_ID,
+coalesce(safe.parse_date('%m/%d/%Y',nullif(trim(dt),'')),'9999-01-01') as PURCH_DATE ,
+coalesce(safe.parse_date('%m/%d/%Y',nullif(trim(r_dt),'')),'9999-01-01') as REC_DATE ,
+coalesce(safe_cast(nullif(trim(prc),'') as float64),0) as PRICE_ITEM,
+coalesce(safe_cast(nullif(trim(qty),'') as int64),0) as QTY, 
+coalesce(safe_cast(nullif(trim(amt),'') as float64),0) as CUST_AMT ,
+coalesce(safe_cast(nullif(trim(r_qty),'') as int64),0) as REC_QTY,
+coalesce(safe_cast(nullif(trim(r_amt),'') as float64),0) REC_AMT ,
+coalesce(safe_cast(nullif(trim(web_prod_id),'') as INT64),0) as web_prod_id,
+coalesce(nullif(trim(GMM_DESC),''),'NA') as GMM_DESC,
+coalesce(nullif(trim(PARENT_MDSE_DIVN_DESC),''),'NA') as PARENT_MDSE_DIVN_DESC,
+current_timestamp() as LOAD_DT, 
+'IN' as Country_code,
+'SW' as ENTITY_CODE FROM `vctbatch-dev45.sales_stg_ds.sales_stg` 
+
+
+10. Verify the data column by column in History as per DIS
+--> done 
+11. Load data into Archive table/ Archive GCS Bucket (extract)
+gsutil mb -c ARCHIVE gs://vctbatchnew45-dev-hist-data-bucket
+
+bq extract --destination_format=CSV --print_header=True vctbatch-dev45:sales_hist_ds.sales_hist \
+gs://vctbatchnew45-dev-hist-data-bucket/sales_hist_export/sales_hist.csv
+ 
+12. Create Auth Views on top of History tables - As per the entitlemnt logic in DIS sheet (like PII, NoPII, reporting, region)
+
+NO PI View 
+----------
+CREATE OR REPLACE VIEW vctbatch-dev45.sales_views_ds.sales_no_pii_view AS
+SELECT USR_COUNT,
+ORD_ID,
+PURCH_DATE,
+REC_DATE,
+PRICE_ITEM,
+QTY,
+CUST_AMT,
+REC_QTY,
+REC_AMT,
+GMM_DESC,
+LOAD_DT,
+ENTITY_CODE
+ from `vctbatch-dev45.sales_hist_ds.sales_hist`
+
+PI View (Autherized team only ) 
+-------
+
+CREATE OR REPLACE VIEW project.vctbatch-dev45.sales_views_ds.sales_with_pii_view AS
+SELECT USR_COUNT,
+CUST_ID,
+ORD_ID,
+PURCH_DATE,
+REC_DATE,
+PRICE_ITEM,
+QTY,
+CUST_AMT,
+REC_QTY,
+REC_AMT,
+web_prod_id,
+GMM_DESC,
+PARENT_MDSE_DIVN_DESC,
+LOAD_DT,
+Country_code,
+ENTITY_CODE  from `vctbatch-dev45.sales_hist_ds.sales_hist`
+
+Region only view  
+----------------
+CREATE OR REPLACE VIEW project.vctbatch-dev45.sales_views_ds.sales_region_view AS
+SELECT 
+CUST_ID,
+ORD_ID,
+PURCH_DATE,
+REC_DATE,
+PRICE_ITEM,
+QTY,
+CUST_AMT,
+REC_QTY,
+REC_AMT,
+GMM_DESC,
+PARENT_MDSE_DIVN_DESC,
+LOAD_DT,
+Country_code,
+ENTITY_CODE  from `vctbatch-dev45.sales_hist_ds.sales_hist` where Country_code='IN'
+
+
+
+13. Verify views data as per the entitlemnt logic.
+-----------------------------------------------
+select * from vctbatch-dev45.sales_views_ds.sales_no_pii_view ;
+select * from vctbatch-dev45.sales_views_ds.sales_with_pii_view ;
+select * from   vctbatch-dev45.sales_views_ds.sales_region_view; 
