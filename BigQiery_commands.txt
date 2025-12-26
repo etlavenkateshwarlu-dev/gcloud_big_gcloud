@@ -15,6 +15,8 @@ bq mk -t vctbatchnew45:cust_data_set1.cust_temp1
 bq mk -t vctbatchnew45:cust_data_set1.cust_tmpe2 cust_id:integer,cust_name:string,cust_loc:string
 
 
+
+
 --> to see the schema
 
 bq show vctbatchnew45:cust_data_set1.cust_tmpe2
@@ -153,10 +155,10 @@ bq  query --use_legacy_sql=False  "select * from vctbatch-dev45.Test_data_Set.cu
 
 --> read/refer schema form gcs bucket
 
-bq load --source_format=CSV \
---schema=gs://vctbatchdev45-dev-custdata-bucket/schemas/schema.json \
-vctbatch-dev45:Test_data_Set.cust_new_1 \
+bq load --source_format=CSV --schema=gs://vctbatchdev45-dev-custdata-bucket/schemas/schema.json vctbatch-dev45:Test_data_Set.cust_new_2
+
 gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo_no_header.csv
+
 
 
 BigQuery can read schema from GCS in external tables
@@ -174,10 +176,87 @@ Note workinhg  -->BigQuery error in mk operation: Cannot load schema files from 
 external tble creation :
 ------------------------
 bq mk --schema=schema.json \
---external_table_definition= \
-CSV=gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo_no_header.csv \
+--external_table_definition=CSV=gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo_no_header.csv \
 vctbatch-dev45:Test_data_Set.cust_new_external 
 
 
+parquet file load 
+-----------------
+
+bq load --source_format=PARQUET \
+vctbatch-dev45:Test_data_Set.cust_pq_data \
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/parquet/userdata.parquet
+
+bq show vctbatch-dev45:Test_data_Set.cust_pq_data
+bq query --use_legacy_sql=False "select * from vctbatch-dev45.Test_data_Set.cust_pq_data"
+
+
+
+
+bq load --source_format=CSV \
+--schema=gs://vctbatchdev45-dev-custdata-bucket/schemas/schema.json \
+vctbatch-dev45:Test_data_Set.cust__data1_new \
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/customer_lo_no_header.csv 
+
+
+========================External And Internal Table ================
+step1 : using big query console
+create table vctbatch-dev45.Test_data_Set.emp_tab (
+eid integer,fname string ,lname string ,phone_number string,hire_date date,job_id string ,salary integer,dept_id string,country string
+)
+
+-->insert /load data into table using BigQuery console 
+Load data into vctbatch-dev45.Test_data_Set.emp_tab
+from files (
+format='CSV',
+uris=['gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv']
+);
+
+
+Using BQ CLoud SDK 
+---------------------
+bq mk -t vctbatch-dev45:Test_data_Set.emp_tab1 \
+eid:integer,fname:string,lname:string,phone_number:string,hire_date:date,job_id:string,salary:integer,dept_id:string,country:string 
+
+bq load --source_format=CSV --skip_leading_rows=1 \
+vctbatch-dev45:Test_data_Set.emp_tab1 \
+gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv
+
+bq query --use_legacy_sql=False "select * from vctbatch-dev45.Test_data_Set.emp_tab1
+
+
+external table creation 
+--------------------
+using big queey console
+ 
+create external table vctbatch-dev45.Test_data_Set.emp_external_tab (
+eid integer,fname string ,lname string ,phone_number string,hire_date date,job_id string ,salary integer,dept_id string,country string
+)
+options(
+format='CSV',
+uris=['gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv'],
+skip_leading_rows=1
+);
+
+select * from vctbatch-dev45.Test_data_Set.emp_external_tab
+
+using BQ console aproach  using query 
+---------------------------
+--> we are not giving colums and data type defaultly it will take 
+create external table vctbatch-dev45.Test_data_Set.emp_external_tab1
+options(
+format='CSV',
+uris=['gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv'],
+skip_leading_rows=1
+);
+
+using cloud SDK 
+---------------
+mkdef --> making defination 
+
+bq mkdef --source_format=CSV --autodetect\
+gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv > mytable_df
+
+bq mk --table --external_table_definition=mytable_df
 
 

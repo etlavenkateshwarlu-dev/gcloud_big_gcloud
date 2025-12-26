@@ -1,0 +1,17 @@
+[
+  { "name": "customer_id", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "customer_name", "type": "STRING", "mode": "NULLABLE" },
+  { "name": "emails", "type": "STRING", "mode": "repeated" },
+  { "name": "phones", "type": "STRING", "mode": "repeated" },
+  { "name": "addresses", "type": "RECORD", "mode": "repeated",
+     "fields":[
+	  { "name": "type", "type": "STRING", "mode": "NULLABLE"},
+	  { "name": "street", "type": "STRING", "mode": "NULLABLE"},
+	  { "name": "city", "type": "STRING", "mode": "NULLABLE"},
+	  { "name": "state", "type": "STRING", "mode": "NULLABLE"},
+	  { "name": "country", "type": "STRING", "mode": "NULLABLE"},
+	  { "name": "pincode", "type": "INT64", "mode": "NULLABLE"}
+	 ]
+  }
+  
+]
