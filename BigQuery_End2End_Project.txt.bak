@@ -116,13 +116,14 @@ join CZ_Retail.Stg_Orders o on c.customer_id=o.customer_id
 
 
 
-
-
 Step6 : peapre DDL script to create the Views  in Visuvalization zone 
 -------------------------------------------------------------------
-create view  VZ_Retail.Retail_Summary_V
-select city,name,purch_amt from SZ_Retail.Retail_Data
+
+--> load data from symantic zone to visuvalization zone
+
+create view  VZ_Retail.Retail_Summary_V as
+select city,name,purch_amtm from SZ_Retail.Retail_Data
 
 
-
+select * from VZ_Retail.Retail_Summary_V 
 
