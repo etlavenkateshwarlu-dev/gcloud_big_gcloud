@@ -1,0 +1,129 @@
+General info 
+------------
+projectid: vctbatch-dev45
+
+
+
+Step1 : copy files into GCS bucket 
+-------------------------------
+a) create GCS Bucket:
+gsutil mb gs://vctbatchdev45-dev-custdata-bucket/landing_zone/
+b) copy to bucket 
+gsutil cp *.csv gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/
+
+c) check bucket is created or not : 
+gsutil ls gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/
+
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/customer.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/orders.csv
+gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/salesman.csv
+
+
+
+Step2 :create dataset/databases 
+-------------------------------
+Confirmed Zone/bronz/raw data/: create schema CZ_Retail   --> bq mq -d CZ_Retail
+Symantic Zone / silver/hist/ : create schema SZ_Retail   --> bq mq -d SZ_Retail
+Visuvalize Zone/gold : create schema VZ_Retail  --> bq mq -d VZ_Retail
+
+>bq ls 
+
+
+Step3 : peapre DDL script to create the tables in confirmed zone 
+-------
+create table CZ_Retail.Stg_Customer(
+customer_id INTEGER,
+cust_name  STRING,
+city STRING,
+grade INTEGER,
+salesman_id INTEGER
+);
+
+create table CZ_Retail.Stg_Orders(
+ord_no INTEGER,
+purch_amt FLOAT64,
+ord_date date ,
+customer_id INTEGER,
+salesman_id INTEGER
+);
+
+create table CZ_Retail.Stg_Salesman(
+salesman_id INTEGER,
+name STRING,
+city STRING,
+commission FLOAT64
+);
+
+check table create dor not 
+
+->bq show CZ_Retail.Stg_Customer
+
+
+
+step4 : Preapre script load data into confirmed zone 
+----------------------------------------------------
+Load data into CZ_Retail.Stg_Customer
+from files(
+format='CSV',
+uris=['gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/customer.csv']
+)
+
+
+Load data into CZ_Retail.Stg_Salesman
+from files(
+format='CSV',
+uris=['gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/salesman.csv']
+)
+
+
+Load data into CZ_Retail.Stg_Orders
+from files(
+format='CSV',
+uris=['gs://vctbatchdev45-dev-custdata-bucket/landing_zone/retail_data/orders.csv']
+)
+
+
+
+
+Step5 : peapre DDL script to create the tables in Symantic zone 
+---------------------------------------------------
+create table SZ_Retail.Retail_Data(
+cust_name STRING,
+city STRING,
+ord_no INTEGER,
+ord_date  date,
+purch_amtm FLOAT64,
+name STRING,
+commission FLOAT64
+
+)
+
+--> load data in to symantic table , while loading perform business /entiltmet logic 
+
+insert into SZ_Retail.Retail_Data
+select SUBSTRING(c.cust_name,1,instr(c.cust_name," ")), 
+case when c.city ='New York' then 'NY'
+when c.city ='London' then 'LN'
+when c.city='Paris' then 'PA'
+when c.city='Berlin' then 'BE'
+when c.city='Moscow' then 'MO'
+else 'AA'
+END as city ,
+o.ord_no ,o.ord_date,o.purch_amt,s.name,s.commission 
+FROM  CZ_Retail.Stg_Customer c 
+join CZ_Retail.Stg_Orders o on c.customer_id=o.customer_id 
+ join CZ_Retail.Stg_Salesman s on o.salesman_id=s.salesman_id ;
+
+
+
+Step6 : peapre DDL script to create the Views  in Visuvalization zone 
+-------------------------------------------------------------------
+
+--> load data from symantic zone to visuvalization zone
+
+create view  VZ_Retail.Retail_Summary_V as
+select city,name,purch_amtm from SZ_Retail.Retail_Data
+
+
+select * from VZ_Retail.Retail_Summary_V 
+

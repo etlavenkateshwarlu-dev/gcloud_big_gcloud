@@ -254,9 +254,18 @@ using cloud SDK
 ---------------
 mkdef --> making defination 
 
-bq mkdef --source_format=CSV --autodetect\
+bq mkdef --source_format=CSV --autodetect \
 gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv > mytable_df
 
-bq mk --table --external_table_definition=mytable_df
+bq mk --table --external_table_definition=mytable_df vctbatch-dev45.Test_data_Set.emp_external_tab2
 
+structure manuvally
+------------------------------------
 
+bq mkdef --source_format=CSV  \
+gs://vctbatch45-dev-custdata-bucket-new/landing_zone/employee_1.csv > mytable_df_1
+
+bq mk --table --external_table_definition=mytable_df_1 vctbatch-dev45:Test_data_Set.emp_external_tab3
+--schema=eid:integer,fname:string,lname:string,phone_number:string,hire_date:date,job_id:string,salary:integer,dept_id:string,country:string 
+
+Note : on external table we cont applay --skip_leading_rows=1 
