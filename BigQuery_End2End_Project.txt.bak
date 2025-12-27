@@ -127,3 +127,52 @@ select city,name,purch_amtm from SZ_Retail.Retail_Data
 
 select * from VZ_Retail.Retail_Summary_V 
 
+
+Step7 : create audt database
+create schema audit
+
+step8 : prepare DDL for audit tables 
+
+create table audit.audit_t(userid string ,environmnet string, db_name string,table_name string, string,total_records int64, 
+last_load_time timestamp , next_load_time timestamp)
+
+insert into audit.audit_t 
+select '1220864' as userid ,
+'dev' as environmnet,
+'CZ_Retail' as db_name,
+'Stg_Customer' as table_name,
+count(*) as  total_records,
+current_timestamp as last_load_time,
+date_add(current_timestamp,interval 1 Day ) as next_load_time
+ from CZ_Retail.Stg_Customer;
+ 
+insert into audit.audit_t 
+ select '1220864' as userid ,
+'dev' as environmnet,
+'CZ_Retail' as db_name,
+'Stg_Orders' as table_name,
+count(*) as  total_records,
+current_timestamp as last_load_time,
+date_add(current_timestamp,interval 1 Day ) as next_load_time
+ from CZ_Retail.Stg_Orders;
+ 
+insert into audit.audit_t 
+select '1220864' as userid ,
+'dev' as environmnet,
+'CZ_Retail' as db_name,
+'Stg_Salesman' as table_name,
+count(*) as  total_records,
+current_timestamp as last_load_time,
+date_add(current_timestamp,interval 1 Day ) as next_load_time
+ from CZ_Retail.Stg_Salesman;
+
+
+insert into audit.audit_t 
+select '1220864' as userid ,
+'dev' as environmnet,
+'SZ_Retail' as db_name,
+'Retail_Data' as table_name,
+count(*) as  total_records,
+current_timestamp as last_load_time,
+date_add(current_timestamp,interval 1 Day ) as next_load_time
+ from SZ_Retail.Retail_Data;

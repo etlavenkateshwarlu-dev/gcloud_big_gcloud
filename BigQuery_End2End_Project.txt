@@ -176,3 +176,10 @@ count(*) as  total_records,
 current_timestamp as last_load_time,
 date_add(current_timestamp,interval 1 Day ) as next_load_time
  from SZ_Retail.Retail_Data;
+ 
+ 
+ ========================Clustering ==========================
+ 
+ 
+ 
+ 
